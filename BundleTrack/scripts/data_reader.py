@@ -22,7 +22,7 @@ class YcbineoatReader:
   def __init__(self,video_dir, downscale=1, shorter_side=None):
     self.video_dir = video_dir
     self.downscale = downscale
-    self.color_files = sorted(glob.glob(f"{self.video_dir}/rgb/*.png"))
+    self.color_files = sorted(glob.glob(f"{self.video_dir}/images/*.png"))
     self.K = np.loadtxt(f'{video_dir}/cam_K.txt').reshape(3,3)
     self.id_strs = []
     for color_file in self.color_files:
@@ -73,14 +73,14 @@ class YcbineoatReader:
     return color
 
   def get_mask(self,i):
-    mask = cv2.imread(self.color_files[i].replace('rgb','masks'),-1)
+    mask = cv2.imread(self.color_files[i].replace('images','masks'),-1)
     if len(mask.shape)==3:
       mask = (mask.sum(axis=-1)>0).astype(np.uint8)
     mask = cv2.resize(mask, (self.W,self.H), interpolation=cv2.INTER_NEAREST)
     return mask
 
   def get_depth(self,i):
-    depth = cv2.imread(self.color_files[i].replace('rgb','depth'),-1)/1e3
+    depth = cv2.imread(self.color_files[i].replace('images','depth'),-1)/1e3
     depth = cv2.resize(depth, (self.W,self.H), interpolation=cv2.INTER_NEAREST)
     return depth
 
@@ -91,12 +91,12 @@ class YcbineoatReader:
     return xyz_map
 
   def get_occ_mask(self,i):
-    hand_mask_file = self.color_files[i].replace('rgb','masks_hand')
+    hand_mask_file = self.color_files[i].replace('images','masks_hand')
     occ_mask = np.zeros((self.H,self.W), dtype=bool)
     if os.path.exists(hand_mask_file):
       occ_mask = occ_mask | (cv2.imread(hand_mask_file,-1)>0)
 
-    right_hand_mask_file = self.color_files[i].replace('rgb','masks_hand_right')
+    right_hand_mask_file = self.color_files[i].replace('images','masks_hand_right')
     if os.path.exists(right_hand_mask_file):
       occ_mask = occ_mask | (cv2.imread(right_hand_mask_file,-1)>0)
 
@@ -113,8 +113,8 @@ class YcbineoatReader:
 class Ho3dReader:
   def __init__(self,video_dir):
     self.video_dir = video_dir
-    self.color_files = sorted(glob.glob(f"{self.video_dir}/rgb/*.jpg"))
-    meta_file = self.color_files[0].replace('.jpg','.pkl').replace('rgb','meta')
+    self.color_files = sorted(glob.glob(f"{self.video_dir}/images/*.jpg"))
+    meta_file = self.color_files[0].replace('.jpg','.pkl').replace('images','meta')
     self.K = pickle.load(open(meta_file,'rb'))['camMat']
 
     self.id_strs = []
@@ -162,7 +162,7 @@ class Ho3dReader:
   def get_depth(self,i):
     color = imageio.imread(self.color_files[i])
     depth_scale = 0.00012498664727900177
-    depth = cv2.imread(self.color_files[i].replace('.jpg','.png').replace('rgb','depth'), -1)
+    depth = cv2.imread(self.color_files[i].replace('.jpg','.png').replace('images','depth'), -1)
     depth = (depth[...,2]+depth[...,1]*256)*depth_scale
     return depth
 
@@ -173,7 +173,7 @@ class Ho3dReader:
 
 
   def get_gt_pose(self,i):
-    meta_file = self.color_files[i].replace('.jpg','.pkl').replace('rgb','meta')
+    meta_file = self.color_files[i].replace('.jpg','.pkl').replace('images','meta')
     meta = pickle.load(open(meta_file,'rb'))
     ob_in_cam_gt = np.eye(4)
     if meta['objTrans'] is None:
